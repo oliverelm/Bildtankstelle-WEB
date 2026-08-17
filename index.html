@@ -41,20 +41,30 @@
             opacity: 0.95;
         }
 
-        /* Kategorien-Grid */
+        /* Kategorien-Grid (Große Bildkacheln) */
         #kategorien-container {
             display: flex; flex-wrap: wrap; gap: 25px; 
             justify-content: center; padding: 0 20px 50px 20px;
             flex: 1;
         }
         .card { 
-            background: #1e1e1e; border-radius: 8px; width: 280px; padding: 20px; 
-            text-align: center; transition: transform 0.3s, background 0.3s; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            background: #222; border-radius: 4px; width: 300px; height: 400px; 
+            padding: 20px; display: flex; flex-direction: column;
+            text-align: left; transition: transform 0.3s; cursor: pointer;
+            border: 1px solid #333;
+            background-size: cover; background-position: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
-        .card:hover { transform: translateY(-5px); background: #282828; }
-        .card h3 { margin: 0 0 8px 0; color: #fff; font-size: 1.2rem; }
-        .card p { margin: 0; color: #888; font-size: 0.9rem; }
+        .card:hover { transform: scale(1.02); }
+        .card-content {
+            margin-top: auto;
+            position: relative;
+            z-index: 2;
+        }
+        .card h3 { margin: 0 0 5px 0; color: #fff; font-size: 1.4rem; text-shadow: 1px 1px 4px rgba(0,0,0,0.8); }
+        .card p { margin: 0; color: #ddd; font-size: 0.85rem; letter-spacing: 1px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
 
         /* Fußbereich (Footer) */
         footer {
@@ -113,7 +123,7 @@
     const randomImage = heroImages[Math.floor(Math.random() * heroImages.length)];
     document.getElementById('hero').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('${randomImage}')`;
 
-    // 2. Kategorien aus der API laden
+    // 2. Kategorien mit Vorschaubildern aus der API laden
     async function loadCategories() {
         try {
             const response = await fetch('/api/categories');
@@ -125,7 +135,17 @@
                 data.categories.forEach(cat => {
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.innerHTML = `<h3>${cat.name}</h3><p>${cat.count || 0} Bilder</p>`;
+                    
+                    // Vorschaubild als Hintergrund einbinden (mit leichtem Farbverlauf für perfekte Lesbarkeit)
+                    const bgImg = cat.thumbnail || cat.coverUrl || '';
+                    card.style.backgroundImage = `linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.1) 100%), url('${bgImg}')`;
+                    
+                    card.innerHTML = `
+                        <div class="card-content">
+                            <h3>${cat.name}</h3>
+                            <p>${cat.count || 0} BILDER</p>
+                        </div>
+                    `;
                     card.onclick = () => window.location.href = `/category?id=${cat.id}`;
                     container.appendChild(card);
                 });

@@ -18,22 +18,63 @@
     </style>
 </head>
 <body>
-
 <div id="hero" class="hero-container">
     <h1>Die Welt mit meinen Augen</h1>
     <p>Reisen, Brücken, Augenblicke – festgehalten von Oliver</p>
 </div>
 
-<!-- Hier beginnt dein bisheriger Kategorien-Code -->
-<div id="kategorien-container">
-    <!-- Hier lädt dein Skript die Daten -->
+<!-- HIER KOMMT DEIN KATEGORIEN-BEREICH UND SKRIPT HIN -->
+<div id="kategorien-container" style="padding: 2rem; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+    <!-- Deine dynamisch geladenen Kategorien aus Google Drive -->
 </div>
 
 <script>
-    const heroImages = ["hero-bruecke-hafen.jpg", "hero-sevilla.jpg", "hero-douro-tal.jpg", "hero-london-nacht.jpg"];
+    // 1. Logik für das zufällige Hero-Bild
+    const heroImages = [
+        "hero-bruecke-hafen.jpg", 
+        "hero-bruecke-nacht-1.jpg", 
+        "hero-douro-tal.jpg", 
+        "hero-london-nacht.jpg", 
+        "hero-london-tag.jpg", 
+        "hero-paris-grand-palais.jpg", 
+        "hero-paris-seine.jpg", 
+        "hero-porto-abend.jpg", 
+        "hero-porto-nacht.jpg", 
+        "hero-sevilla.jpg"
+    ];
     const randomImage = heroImages[Math.floor(Math.random() * heroImages.length)];
     document.getElementById('hero').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${randomImage}')`;
+
+    // 2. DEIN SKRIPT ZUM LADEN DER KATEGORIEN AUS DER API
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            const data = await response.json();
+            const container = document.getElementById('kategorien-container');
+            container.innerHTML = ''; // Vorherigen Inhalt leeren
+
+            // Schleife durch deine Google Drive Ordner/Kategorien
+            // (Passe diesen Teil an, je nachdem wie dein ursprüngliches Skript die Kacheln gebaut hat)
+            if (data.categories) {
+                data.categories.forEach(cat => {
+                    const card = document.createElement('div');
+                    card.style.cssText = "background: #222; border-radius: 8px; width: 250px; padding: 15px; text-align: center; cursor: pointer;";
+                    card.innerHTML = `
+                        <h3>${cat.name}</h3>
+                        <p>${cat.count || 0} Bilder</p>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        } catch (error) {
+            console.error("Fehler beim Laden der Kategorien:", error);
+        }
+    }
+
+    // Beim Laden der Seite ausführen
+    loadCategories();
 </script>
 
 </body>
 </html>
+

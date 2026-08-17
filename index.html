@@ -136,9 +136,12 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     
-                    // Vorschaubild als Hintergrund einbinden (mit leichtem Farbverlauf für perfekte Lesbarkeit)
-                    const bgImg = cat.thumbnail || cat.coverUrl || '';
-                    card.style.backgroundImage = `linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.1) 100%), url('${bgImg}')`;
+                    // Zuverlässiges Auslesen des Vorschaubildes aus allen gängigen API-Feldern
+                    const bgImg = cat.thumbnail || cat.coverUrl || cat.cover || cat.image || cat.url || '';
+                    
+                    if (bgImg) {
+                        card.style.backgroundImage = `linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.1) 100%), url('${bgImg}')`;
+                    }
                     
                     card.innerHTML = `
                         <div class="card-content">

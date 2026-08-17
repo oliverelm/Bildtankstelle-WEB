@@ -1,42 +1,56 @@
-// Gemeinsamer Helfer für alle /api-Funktionen.
-// Tauscht den in Vercel hinterlegten Refresh-Token gegen ein kurzlebiges
-// Zugriffstoken und ruft damit die Google Drive API auf. Läuft ausschließlich
-// server-seitig — Client-ID, Client-Secret und Refresh-Token verlassen diesen
-// Code niemals in Richtung Browser.
+const crypto = require('crypto');
 
 const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 
+// Helfer: Erzeugt ein sicheres Token aus deiner JSON-Datei in Vercel
 async function getAccessToken() {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN } =
-    process.env;
-
-  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) {
-    throw new Error(
-      "Server ist nicht konfiguriert: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET " +
-        "oder GOOGLE_REFRESH_TOKEN fehlt als Umgebungsvariable."
-    );
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  
+  if (!serviceAccountJson) {
+    throw new Error("Server ist nicht konfiguriert: GOOGLE_SERVICE_ACCOUNT_JSON fehlt.");
   }
 
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  const credentials = JSON.parse(serviceAccountJson);
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = iat + 3600;
+
+  // JSON Web Token (JWT) für die Google Drive API generieren
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    iss: credentials.client_email,
+    scope: 'https://www.googleapis.com/auth/drive.readonly',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: exp,
+    iat: iat
+  })).toString('base64url');
+
+  const signatureInput = `${header}.${payload}`;
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(signatureInput);
+  const signature = sign.sign(credentials.private_key, 'base64url');
+
+  const jwt = `${signatureInput}.${signature}`;
+
+  // Token bei Google abholen
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      refresh_token: GOOGLE_REFRESH_TOKEN,
-      grant_type: "refresh_token",
-    }),
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt
+    })
   });
 
   if (!res.ok) {
     const detail = await res.text();
-    throw new Error("Token-Erneuerung fehlgeschlagen: " + detail);
+    throw new Error("Token-Generierung fehlgeschlagen: " + detail);
   }
 
   const data = await res.json();
   return data.access_token;
 }
 
+// Führt die eigentlichen Anfragen an Google Drive aus
 async function driveFetch(url) {
   const accessToken = await getAccessToken();
   const res = await fetch(url, {
@@ -49,24 +63,19 @@ async function driveFetch(url) {
   return res.json();
 }
 
+// Findet die ID deines Hauptordners
 async function resolveRootFolderId() {
-  const { DRIVE_ROOT_FOLDER_ID, DRIVE_ROOT_FOLDER_NAME } = process.env;
-  if (DRIVE_ROOT_FOLDER_ID) return DRIVE_ROOT_FOLDER_ID;
+  // Hier nutzen wir jetzt die Variable, die du in Vercel angelegt hast!
+  const { DRIVE_FOLDER_ID } = process.env;
+  if (DRIVE_FOLDER_ID) return DRIVE_FOLDER_ID;
 
-  const rootName = DRIVE_ROOT_FOLDER_NAME || "Fotowebseite";
-  const q = encodeURIComponent(
-    `name='${rootName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
-  );
-  const data = await driveFetch(`${DRIVE_API}?q=${q}&fields=files(id,name)&pageSize=1`);
-  if (!data.files || data.files.length === 0) {
-    throw new Error(`Ordner "${rootName}" wurde in Google Drive nicht gefunden.`);
-  }
-  return data.files[0].id;
+  throw new Error(`Die DRIVE_FOLDER_ID fehlt in den Vercel-Umgebungsvariablen.`);
 }
 
+// Hier greifen wir auch die GPS-Koordinaten (location) und Beschreibung für die Suche ab
 const IMAGE_FIELDS = "id,name,description,thumbnailLink,imageMediaMetadata(location)";
 
-// Listet die direkten Unterordner eines Ordners.
+// Listet die direkten Unterordner (z.B. "Italien", "Venedig")
 async function listSubfolders(parentId) {
   const q = encodeURIComponent(
     `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
@@ -77,8 +86,7 @@ async function listSubfolders(parentId) {
   return data.files || [];
 }
 
-// Listet alle Bilder direkt in einem Ordner (mit Beschreibung + GPS, für die
-// eigentliche Bildanzeige). Holt bei Bedarf mehrere Seiten.
+// Listet alle Bilder in einem Ordner
 async function listImagesInFolder(folderId) {
   let files = [];
   let pageToken = null;
@@ -97,11 +105,7 @@ async function listImagesInFolder(folderId) {
   return files;
 }
 
-// Baut für eine Kategorie- oder Unterkategorie-Ansicht die Kachel-Karten:
-// für jeden Unterordner wird geprüft, ob er SELBST wieder Unterordner hat
-// (dann ist es eine Kategorie mit weiteren Unterkategorien) oder Bilder
-// enthält (dann ist es eine "Blatt"-Kategorie). Funktioniert rekursiv für
-// beliebig viele Verschachtelungsebenen.
+// Baut die Kacheln für Kategorien und Unterkategorien
 async function buildFolderCards(parentId) {
   const subfolders = await listSubfolders(parentId);
 
@@ -113,8 +117,6 @@ async function buildFolderCards(parentId) {
       ]);
 
       if (childSubfolders.length > 0) {
-        // Hat selbst Unterkategorien: Anzahl/Titelbild aus der ersten
-        // Unterkategorie (bzw. rekursiv, falls die auch leer wäre) ableiten.
         let count = images.length;
         let cover = images[0] ? images[0].thumbnailLink : null;
         for (const sub of childSubfolders) {
@@ -142,8 +144,7 @@ async function buildFolderCards(parentId) {
   );
 }
 
-// Durchsucht rekursiv den kompletten Baum ab einem Ordner und gibt alle
-// gefundenen Bilder zurück, jeweils mit dem Kategorie-Pfad (Breadcrumb).
+// Durchsucht den kompletten Baum (perfekt für unsere spätere Suchfunktion!)
 async function crawlTree(folderId, breadcrumb) {
   const [subfolders, images] = await Promise.all([
     listSubfolders(folderId),

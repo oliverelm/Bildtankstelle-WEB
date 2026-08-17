@@ -5,76 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Die Welt mit meinen Augen | Fotogalerie</title>
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 0; background-color: #111; color: #fff; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background-color: #111; color: #fff; }
+        
+        /* Hero-Bereich */
         .hero-container {
             width: 100%; height: 70vh;
             background-size: cover; background-position: center;
             display: flex; flex-direction: column; justify-content: center;
             align-items: center; color: white; text-align: center;
+            margin-bottom: 3rem;
         }
-        .hero-container h1 { font-size: 3rem; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); margin: 0; }
-        .hero-container p { font-size: 1.2rem; text-shadow: 1px 1px 5px rgba(0,0,0,0.7); }
-        /* Hier kommt später dein Kategorien-CSS hin */
+        .hero-container h1 { font-size: 3.5rem; text-shadow: 3px 3px 10px rgba(0,0,0,0.8); margin: 0; }
+        .hero-container p { font-size: 1.5rem; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
+
+        /* Kategorien-Grid */
+        #kategorien-container {
+            display: flex; flex-wrap: wrap; gap: 25px; 
+            justify-content: center; padding: 0 20px 50px 20px;
+        }
+        .card { 
+            background: #222; border-radius: 12px; width: 280px; padding: 20px; 
+            text-align: center; transition: transform 0.3s; cursor: pointer;
+        }
+        .card:hover { transform: scale(1.05); background: #333; }
+        .card h3 { margin: 0 0 10px 0; color: #fff; }
     </style>
 </head>
 <body>
+
 <div id="hero" class="hero-container">
     <h1>Die Welt mit meinen Augen</h1>
     <p>Reisen, Brücken, Augenblicke – festgehalten von Oliver</p>
 </div>
 
-<!-- HIER KOMMT DEIN KATEGORIEN-BEREICH UND SKRIPT HIN -->
-<div id="kategorien-container" style="padding: 2rem; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-    <!-- Deine dynamisch geladenen Kategorien aus Google Drive -->
+<div id="kategorien-container">
+    <p style="text-align:center;">Lade Kategorien...</p>
 </div>
 
 <script>
-    // 1. Logik für das zufällige Hero-Bild
+    // 1. Zufälliges Hero-Bild setzen
     const heroImages = [
-        "hero-bruecke-hafen.jpg", 
-        "hero-bruecke-nacht-1.jpg", 
-        "hero-douro-tal.jpg", 
-        "hero-london-nacht.jpg", 
-        "hero-london-tag.jpg", 
-        "hero-paris-grand-palais.jpg", 
-        "hero-paris-seine.jpg", 
-        "hero-porto-abend.jpg", 
-        "hero-porto-nacht.jpg", 
-        "hero-sevilla.jpg"
+        "hero-bruecke-hafen.jpg", "hero-bruecke-nacht-1.jpg", "hero-douro-tal.jpg", 
+        "hero-london-nacht.jpg", "hero-london-tag.jpg", "hero-paris-grand-palais.jpg", 
+        "hero-paris-seine.jpg", "hero-porto-abend.jpg", "hero-porto-nacht.jpg", "hero-sevilla.jpg"
     ];
     const randomImage = heroImages[Math.floor(Math.random() * heroImages.length)];
     document.getElementById('hero').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${randomImage}')`;
 
-    // 2. DEIN SKRIPT ZUM LADEN DER KATEGORIEN AUS DER API
+    // 2. Kategorien aus deiner API laden
     async function loadCategories() {
         try {
             const response = await fetch('/api/categories');
             const data = await response.json();
             const container = document.getElementById('kategorien-container');
-            container.innerHTML = ''; // Vorherigen Inhalt leeren
+            container.innerHTML = ''; 
 
-            // Schleife durch deine Google Drive Ordner/Kategorien
-            // (Passe diesen Teil an, je nachdem wie dein ursprüngliches Skript die Kacheln gebaut hat)
             if (data.categories) {
                 data.categories.forEach(cat => {
                     const card = document.createElement('div');
-                    card.style.cssText = "background: #222; border-radius: 8px; width: 250px; padding: 15px; text-align: center; cursor: pointer;";
-                    card.innerHTML = `
-                        <h3>${cat.name}</h3>
-                        <p>${cat.count || 0} Bilder</p>
-                    `;
+                    card.className = 'card';
+                    card.innerHTML = `<h3>${cat.name}</h3><p>${cat.count || 0} Bilder</p>`;
+                    card.onclick = () => window.location.href = `/category?id=${cat.id}`;
                     container.appendChild(card);
                 });
             }
         } catch (error) {
-            console.error("Fehler beim Laden der Kategorien:", error);
+            document.getElementById('kategorien-container').innerHTML = "<p>Fehler beim Laden.</p>";
         }
     }
 
-    // Beim Laden der Seite ausführen
     loadCategories();
 </script>
 
 </body>
 </html>
-

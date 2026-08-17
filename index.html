@@ -5,42 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Die Welt mit meinen Augen | Fotogalerie</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background-color: #111; color: #fff; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            background-color: #111; 
+            color: #fff; 
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
         
-        /* Hero-Bereich */
+        /* Hero-Bereich mit edler Serif-Schrift */
         .hero-container {
-            width: 100%; height: 70vh;
+            width: 100%; height: 65vh;
             background-size: cover; background-position: center;
             display: flex; flex-direction: column; justify-content: center;
             align-items: center; color: white; text-align: center;
             margin-bottom: 3rem;
         }
-        .hero-container h1 { font-size: 3.5rem; text-shadow: 3px 3px 10px rgba(0,0,0,0.8); margin: 0; }
-        .hero-container p { font-size: 1.5rem; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
+        .hero-container h1 { 
+            font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+            font-size: 3.8rem; 
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 12px rgba(0,0,0,0.8); 
+            margin: 0 0 15px 0; 
+        }
+        .hero-container p { 
+            font-family: "Lora", Georgia, serif;
+            font-style: italic;
+            font-size: 1.4rem; 
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 8px rgba(0,0,0,0.8); 
+            margin: 0;
+            opacity: 0.95;
+        }
 
         /* Kategorien-Grid */
         #kategorien-container {
             display: flex; flex-wrap: wrap; gap: 25px; 
             justify-content: center; padding: 0 20px 50px 20px;
+            flex: 1;
         }
         .card { 
-            background: #222; border-radius: 12px; width: 280px; padding: 20px; 
-            text-align: center; transition: transform 0.3s; cursor: pointer;
+            background: #1e1e1e; border-radius: 8px; width: 280px; padding: 20px; 
+            text-align: center; transition: transform 0.3s, background 0.3s; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .card:hover { transform: scale(1.05); background: #333; }
-        .card h3 { margin: 0 0 10px 0; color: #fff; }
+        .card:hover { transform: translateY(-5px); background: #282828; }
+        .card h3 { margin: 0 0 8px 0; color: #fff; font-size: 1.2rem; }
+        .card p { margin: 0; color: #888; font-size: 0.9rem; }
+
+        /* Fußbereich (Footer) */
+        footer {
+            background-color: #0a0a0a;
+            color: #777;
+            text-align: center;
+            padding: 25px 20px;
+            font-size: 0.9rem;
+            border-top: 1px solid #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        footer span { color: #555; }
+        footer a {
+            color: #aaa;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        footer a:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
 <div id="hero" class="hero-container">
     <h1>Die Welt mit meinen Augen</h1>
-    <p>Reisen, Brücken, Augenblicke – festgehalten von Oliver</p>
+    <p>Ein Blick. Ein Moment. Eine Geschichte.</p>
 </div>
 
 <div id="kategorien-container">
-    <p style="text-align:center;">Lade Kategorien...</p>
+    <p style="text-align:center; color: #777;">Lade Kategorien...</p>
 </div>
+
+<footer>
+    <div>© 2026 Oliver</div>
+    <span>·</span>
+    <a href="/">Home</a>
+    <a href="/impressum.html">Impressum</a>
+    <a href="/kontakt.html">Kontakt</a>
+    <a href="/lizenz.html">Lizenz</a>
+    <a href="/datenschutz.html">Datenschutz</a>
+</footer>
 
 <script>
     // 1. Zufälliges Hero-Bild setzen
@@ -50,9 +111,9 @@
         "hero-paris-seine.jpg", "hero-porto-abend.jpg", "hero-porto-nacht.jpg", "hero-sevilla.jpg"
     ];
     const randomImage = heroImages[Math.floor(Math.random() * heroImages.length)];
-    document.getElementById('hero').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${randomImage}')`;
+    document.getElementById('hero').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('${randomImage}')`;
 
-    // 2. Kategorien aus deiner API laden
+    // 2. Kategorien aus der API laden
     async function loadCategories() {
         try {
             const response = await fetch('/api/categories');
@@ -70,7 +131,7 @@
                 });
             }
         } catch (error) {
-            document.getElementById('kategorien-container').innerHTML = "<p>Fehler beim Laden.</p>";
+            document.getElementById('kategorien-container').innerHTML = "<p style='color:#ff6b6b;'>Fehler beim Laden der Kategorien.</p>";
         }
     }
 
